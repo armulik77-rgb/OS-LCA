@@ -1,1137 +1,466 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0b1220">
+<meta name="theme-color" content="#111820">
 <title>Deadlocks in Database Transactions | OS Lab</title>
+
 <style>
 :root {
-  --site-primary: #d6a85f;
-  --site-secondary: #202b3a;
-  --site-background: #111820;
-  --site-on-primary: #17130b;
-  --site-on-secondary: #f5f1e8;
-  --site-on-background: #f5f1e8;
-  --site-font-body: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --site-font-heading: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --ink: #f5f1e8;
+  --bg: #111820;
+  --panel: #19232e;
+  --panel2: #202b3a;
+  --gold: #d6a85f;
+  --text: #f5f1e8;
   --muted: #b4bec8;
   --line: rgba(190,202,215,.2);
-  --panel: #19232e;
-  --panel-2: #202b3a;
-  --cyan: #f0c778;
   --green: #6fe0b2;
   --red: #ff7f86;
-  --amber: #f0c778;
 }
-
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-
 body {
   margin: 0;
-  color: var(--site-on-background);
-  background: var(--site-background);
-  font-family: var(--site-font-body);
-  line-height: 1.55;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, Arial, sans-serif;
+  line-height: 1.6;
 }
-
-#app {
-  min-height: 100vh;
-  width: 100%;
-  border-radius: 0;
-  overflow: hidden;
-  background: var(--site-background);
-  color: var(--ink);
-}
-
-button, a { font: inherit; }
-button { cursor: pointer; }
 a { color: inherit; text-decoration: none; }
-
-.wrap {
-  width: min(1120px, calc(100% - 40px));
-  margin: 0 auto;
-}
-
+button { cursor: pointer; font: inherit; }
+.wrap { width: min(1120px, calc(100% - 40px)); margin: auto; }
 .topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 20px 0;
-  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 20px; padding: 20px 0; border-bottom: 1px solid var(--line);
 }
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  font-weight: 750;
-  letter-spacing: .02em;
-}
-
-.brand-mark {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(214,168,95,.4);
-  border-radius: 11px;
-  color: var(--cyan);
-  background: rgba(214,168,95,.1);
-}
-
-.nav {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.nav a:hover { color: var(--cyan); }
-
-.nav-cta {
-  border: 1px solid rgba(214,168,95,.35);
-  padding: 9px 13px;
-  border-radius: 9px;
-  color: var(--cyan) !important;
-}
-
-.hero {
-  display: grid;
-  grid-template-columns: 1.03fr .97fr;
-  align-items: center;
-  gap: 42px;
-  padding: 76px 0 64px;
-}
-
-.eyebrow {
-  color: var(--cyan);
-  text-transform: uppercase;
-  letter-spacing: .17em;
-  font-size: 11px;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.eyebrow:before {
-  content: "";
-  width: 23px;
-  height: 1px;
-  background: var(--cyan);
-}
-
-h1, h2, h3, p { margin-top: 0; }
-
-h1 {
-  font-family: var(--site-font-heading);
-  font-size: clamp(39px, 5.5vw, 67px);
-  line-height: 1.02;
-  letter-spacing: -.055em;
-  margin: 18px 0 20px;
-  max-width: 650px;
-}
-
-h1 span { color: var(--cyan); }
-
-.hero-copy {
-  color: var(--muted);
-  max-width: 520px;
-  font-size: 16px;
-}
-
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 28px;
-}
-
+.brand { font-size: 14px; font-weight: 800; letter-spacing: .04em; }
+.brand span { color: var(--gold); }
+.nav { display: flex; gap: 20px; color: var(--muted); font-size: 13px; }
+.nav a:hover { color: var(--gold); }
 .btn {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 12px 17px;
-  color: var(--ink);
-  background: rgba(255,255,255,.025);
-  font-weight: 700;
-  font-size: 13px;
-  transition: transform .2s, border-color .2s, background .2s;
+  display: inline-block; padding: 11px 16px; border: 1px solid var(--line);
+  border-radius: 9px; color: var(--text); background: #ffffff05;
+  font-size: 13px; font-weight: 700; transition: .2s;
 }
-
-.btn:hover {
-  transform: translateY(-2px);
-  border-color: rgba(214,168,95,.65);
+.btn:hover { transform: translateY(-2px); border-color: var(--gold); }
+.btn.primary { background: var(--gold); color: #17130b; border-color: var(--gold); }
+.hero {
+  display: grid; grid-template-columns: 1fr 1fr; align-items: center;
+  gap: 38px; padding: 75px 0 65px;
 }
-
-.btn.primary {
-  background: var(--cyan);
-  border-color: var(--cyan);
-  color: #17130b;
+.eyebrow,.kicker {
+  color: var(--gold); text-transform: uppercase;
+  letter-spacing: .15em; font-size: 11px; font-weight: 800;
 }
-
-.btn:disabled {
-  cursor: not-allowed;
-  transform: none;
+h1 { font-size: clamp(40px, 5.5vw, 66px); line-height: 1.05; letter-spacing: -.05em; margin: 18px 0; }
+h1 span { color: var(--gold); }
+.hero-copy { color: var(--muted); max-width: 510px; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 25px; }
+.hero-note { margin-top: 20px; font-size: 12px; color: var(--muted); }
+.visual {
+  border: 1px solid var(--line); border-radius: 22px; padding: 24px;
+  background: radial-gradient(ellipse at center, #d6a85f20, transparent 65%), #18212b;
 }
-
-.hero-note {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 24px;
-  color: #91a3b9;
-  font-size: 12px;
-}
-
-.pulse-dot {
-  width: 7px;
-  height: 7px;
-  background: var(--green);
-  border-radius: 50%;
-  box-shadow: 0 0 0 5px rgba(111,224,178,.1);
-}
-
-.hero-visual {
-  position: relative;
-  min-height: 350px;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse at 50% 42%, rgba(214,168,95,.15), transparent 60%),
-    #18212b;
-  padding: 24px;
-}
-
-.visual-head {
-  display: flex;
-  justify-content: space-between;
-  color: var(--muted);
-  font-size: 11px;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  gap: 10px;
-}
-
-.status-pill {
-  color: var(--green);
-  border: 1px solid rgba(111,224,178,.25);
-  background: rgba(111,224,178,.08);
-  padding: 5px 9px;
-  border-radius: 99px;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.mini-network {
-  position: relative;
-  height: 255px;
-  margin-top: 20px;
-}
-
+.visual-head { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
+.pill { color: var(--green); border: 1px solid #6fe0b244; border-radius: 20px; padding: 4px 8px; }
+.network { height: 270px; position: relative; margin-top: 20px; }
 .node {
-  position: absolute;
-  width: 112px;
-  height: 85px;
-  border: 1px solid rgba(214,168,95,.35);
-  border-radius: 14px;
-  background: rgba(25,35,46,.95);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  box-shadow: 0 10px 35px rgba(0,0,0,.15);
+  position: absolute; width: 115px; min-height: 75px; padding: 12px 5px;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 5px; border: 1px solid #d6a85f88; border-radius: 13px;
+  background: #172331; text-align: center; font-size: 12px;
+  animation: float 3s ease-in-out infinite;
 }
-
-.node strong { font-size: 13px; }
 .node small { color: var(--muted); font-size: 10px; }
-.node svg { width: 22px; height: 22px; color: var(--cyan); }
-
-.node.a { left: 5%; top: 10%; }
-.node.b { right: 5%; top: 10%; }
-
-.node.t1 {
-  left: 5%;
-  bottom: 4%;
-  border-color: rgba(255,130,147,.4);
+.node.a { left: 2%; top: 5%; }
+.node.b { right: 2%; top: 5%; animation-delay: .4s; }
+.node.t1 { left: 2%; bottom: 3%; border-color: #ff7f8688; }
+.node.t2 { right: 2%; bottom: 3%; animation-delay: .4s; border-color: #ff7f8688; }
+.flow {
+  position: absolute; height: 2px; width: 38%; left: 31%;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: pulse 1.8s linear infinite;
 }
+.flow.one { top: 24%; }
+.flow.two { bottom: 23%; animation-delay: .7s; }
+.flow.three { top: 50%; transform: rotate(50deg); width: 30%; left: 20%; }
+.flow.four { top: 50%; transform: rotate(-50deg); width: 30%; left: 50%; }
+@keyframes pulse { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
-.node.t2 {
-  right: 5%;
-  bottom: 4%;
-  border-color: rgba(240,199,120,.4);
-}
-
-.flow-line {
-  position: absolute;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-  transform-origin: left center;
-  opacity: .8;
-}
-
-.flow-line.one { left: 29%; top: 31%; width: 42%; }
-.flow-line.two { left: 29%; top: 73%; width: 42%; }
-.flow-line.three { left: 27%; top: 42%; width: 31%; transform: rotate(72deg); }
-.flow-line.four { right: 0; left: 70%; top: 43%; width: 31%; transform: rotate(108deg); }
-
-.flow-line:after {
-  content: "";
-  position: absolute;
-  top: -3px;
-  right: 20%;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--cyan);
-  box-shadow: 0 0 12px var(--cyan);
-  animation: travel 2.4s linear infinite;
-}
-
-@keyframes travel {
-  from { right: 85%; opacity: 0; }
-  20% { opacity: 1; }
-  to { right: 0; opacity: 0; }
-}
-
-.section {
-  padding: 62px 0;
-  border-top: 1px solid var(--line);
-}
-
+.section { padding: 60px 0; border-top: 1px solid var(--line); }
 .section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  gap: 30px;
-  margin-bottom: 28px;
+  display: flex; justify-content: space-between; align-items: end;
+  gap: 25px; margin-bottom: 28px;
 }
+.section-head h2 { font-size: clamp(27px, 3.5vw, 39px); line-height: 1.15; letter-spacing: -.04em; margin: 8px 0 0; }
+.section-head p { max-width: 420px; color: var(--muted); font-size: 13px; margin: 0; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; }
+.card { border: 1px solid var(--line); border-radius: 14px; padding: 20px; background: var(--panel); }
+.card .icon { font-size: 22px; color: var(--gold); }
+.card h3 { font-size: 15px; margin: 13px 0 7px; }
+.card p { font-size: 12px; color: var(--muted); margin: 0; }
 
-.section-head h2 {
-  font-size: clamp(27px,3.5vw,39px);
-  letter-spacing: -.04em;
-  line-height: 1.1;
-  margin: 9px 0 0;
-}
-
-.section-head p {
-  max-width: 420px;
-  color: var(--muted);
-  font-size: 13px;
-  margin: 0;
-}
-
-.kicker {
-  color: var(--cyan);
-  text-transform: uppercase;
-  letter-spacing: .15em;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.simulator {
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  overflow: hidden;
-  background: var(--panel);
-}
-
-.sim-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 22px;
-  border-bottom: 1px solid var(--line);
-  background: rgba(255,255,255,.015);
-}
-
-.sim-title { font-size: 14px; font-weight: 800; }
-
-.step-count {
-  color: var(--muted);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
-.progress { height: 3px; background: #2b3540; }
-
-.progress-fill {
-  height: 100%;
-  width: 0;
-  background: var(--cyan);
-  transition: width .4s ease;
-}
-
-.sim-body {
-  display: grid;
-  grid-template-columns: 1.2fr .8fr;
-  min-height: 340px;
-}
-
+.simulator { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--panel); }
+.sim-top { display: flex; justify-content: space-between; padding: 17px 20px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.step-count { color: var(--muted); }
+.progress { height: 4px; background: #ffffff0b; }
+.progress-fill { height: 100%; width: 0; background: var(--gold); transition: width .35s; }
+.sim-body { display: grid; grid-template-columns: 1.15fr .85fr; }
 .diagram {
-  position: relative;
-  min-height: 340px;
-  padding: 24px;
-  border-right: 1px solid var(--line);
-  background: radial-gradient(ellipse at 50% 50%, rgba(214,168,95,.09), transparent 60%);
+  position: relative; min-height: 350px; border-right: 1px solid var(--line);
+  background: radial-gradient(ellipse at center, #d6a85f10, transparent 65%);
 }
-
-.diagram-label {
-  color: var(--muted);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: .12em;
-}
-
 .account {
-  position: absolute;
-  width: 135px;
-  min-height: 100px;
-  border: 1px solid var(--line);
-  background: #202b3a;
-  border-radius: 15px;
-  padding: 15px;
-  text-align: center;
-  transition: border-color .35s, box-shadow .35s, transform .35s;
+  position: absolute; top: 17%; width: 130px; min-height: 88px;
+  padding: 13px; border: 1px solid var(--line); border-radius: 13px;
+  background: #172331; text-align: center; transition: .3s;
 }
-
-.account .bank-icon {
-  display: block;
-  font-size: 22px;
-  margin-bottom: 6px;
+.account.a { left: 5%; }
+.account.b { right: 5%; }
+.account .bank-icon { font-size: 20px; }
+.account strong,.account small { display: block; }
+.account strong { font-size: 12px; }
+.account small { color: var(--muted); font-size: 10px; margin-top: 4px; }
+.account.locked { border-color: var(--gold); box-shadow: 0 0 20px #d6a85f25; }
+.tx {
+  position: absolute; bottom: 18px; width: 130px; padding: 12px 6px;
+  border: 1px solid var(--line); border-radius: 11px; background: #101820;
+  text-align: center; transition: .3s;
 }
-
-.account strong { display: block; font-size: 13px; }
-.account small { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
-
-.account.locked {
-  border-color: rgba(214,168,95,.8);
-  box-shadow: 0 0 0 3px rgba(214,168,95,.1), 0 0 25px rgba(214,168,95,.12);
-}
-
-.account.a { left: 8%; top: 22%; }
-.account.b { right: 8%; top: 22%; }
-
-.tx-card {
-  position: absolute;
-  bottom: 20px;
-  width: 135px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #19232e;
-  text-align: center;
-  transition: border-color .3s, transform .3s;
-}
-
-.tx-card strong { display: block; font-size: 12px; }
-.tx-card small { display: block; color: var(--muted); font-size: 10px; margin-top: 3px; }
-
-.tx-card.t1 { left: 8%; }
-.tx-card.t2 { right: 8%; }
-
-.tx-card.waiting {
-  border-color: rgba(255,130,147,.7);
-  transform: translateY(-4px);
-}
-
-.tx-card.done { border-color: rgba(111,224,178,.7); }
-
-.arrow-svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  overflow: visible;
-}
-
-.arrow-svg path {
-  fill: none;
-  stroke: var(--cyan);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-dasharray: 5 7;
-  opacity: 0;
-  transition: opacity .4s;
-}
-
-.arrow-svg path.visible {
-  opacity: .9;
-  animation: dash 1.3s linear infinite;
-}
-
-.arrow-svg path.danger { stroke: var(--red); }
-
-@keyframes dash {
-  to { stroke-dashoffset: -24; }
-}
-
+.tx.t1 { left: 5%; }
+.tx.t2 { right: 5%; }
+.tx strong,.tx small { display: block; }
+.tx strong { font-size: 11px; }
+.tx small { color: var(--muted); font-size: 10px; margin-top: 4px; }
+.tx.waiting { border-color: var(--red); transform: translateY(-4px); }
+.tx.done { border-color: var(--green); }
 .center-status {
-  position: absolute;
-  left: 50%;
-  top: 54%;
-  transform: translate(-50%,-50%);
-  width: 110px;
-  text-align: center;
-  font-size: 10px;
-  color: var(--muted);
-  background: rgba(17,24,32,.95);
-  padding: 9px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  z-index: 2;
+  position: absolute; left: 50%; top: 53%; transform: translate(-50%,-50%);
+  width: 118px; padding: 10px 5px; text-align: center; border: 1px solid var(--line);
+  border-radius: 10px; background: #111820ee; font-size: 10px; color: var(--muted);
 }
-
-.center-status b {
-  display: block;
-  color: var(--cyan);
-  font-size: 11px;
-  margin-bottom: 3px;
-}
-
-.center-status.deadlocked {
-  border-color: rgba(255,127,134,.65);
-  color: #ffc1ca;
-}
-
+.center-status b { display: block; color: var(--gold); font-size: 11px; }
+.center-status.deadlocked { border-color: var(--red); color: #ffc1ca; }
 .center-status.deadlocked b { color: var(--red); }
-
-.center-status.recovered {
-  border-color: rgba(111,224,178,.65);
-}
-
+.center-status.recovered { border-color: var(--green); }
 .center-status.recovered b { color: var(--green); }
+.arrows { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.arrows path { fill: none; stroke: var(--gold); stroke-width: 2.5; stroke-dasharray: 6 6; opacity: 0; transition: opacity .3s; }
+.arrows path.visible { opacity: 1; animation: dash 1.2s linear infinite; }
+.arrows path.danger { stroke: var(--red); }
+@keyframes dash { to { stroke-dashoffset: -24; } }
+.explain { padding: 25px; display: flex; flex-direction: column; }
+.step-tag { align-self: flex-start; color: var(--gold); background: #d6a85f15; border: 1px solid #d6a85f44; padding: 5px 8px; border-radius: 7px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.explain h3 { font-size: 23px; line-height: 1.2; margin: 18px 0 10px; }
+.explain p { color: var(--muted); font-size: 13px; }
+.talk { margin-top: auto; padding: 12px; border-left: 2px solid var(--gold); background: #d6a85f0d; font-size: 11px; color: var(--muted); }
+.sim-controls { display: flex; flex-wrap: wrap; gap: 9px; padding: 15px; border-top: 1px solid var(--line); }
+.sim-controls .btn { padding: 9px 12px; }
+.play-state { margin-left: auto; align-self: center; color: var(--muted); font-size: 11px; }
 
-.explain {
-  padding: 26px;
-  display: flex;
-  flex-direction: column;
-}
-
-.explain .step-tag {
-  display: inline-flex;
-  align-self: flex-start;
-  color: var(--cyan);
-  border: 1px solid rgba(214,168,95,.3);
-  background: rgba(214,168,95,.08);
-  padding: 5px 8px;
-  border-radius: 7px;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-}
-
-.explain h3 {
-  font-size: 23px;
-  letter-spacing: -.035em;
-  line-height: 1.15;
-  margin: 18px 0 10px;
-}
-
-.explain p {
-  color: var(--muted);
-  font-size: 13px;
-  margin-bottom: 18px;
-}
-
-.code-note {
-  margin-top: auto;
-  border-left: 2px solid var(--cyan);
-  background: rgba(214,168,95,.07);
-  padding: 11px 13px;
-  color: #e1d5bd;
-  font-size: 11px;
-}
-
-.sim-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 9px;
-  padding: 16px 20px;
-  border-top: 1px solid var(--line);
-}
-
-.sim-controls .btn { padding: 10px 13px; font-size: 12px; }
-.sim-controls .spacer { flex: 1; }
-
-.playing-state {
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.grid-conditions {
-  display: grid;
-  grid-template-columns: repeat(4,1fr);
-  gap: 12px;
-}
-
-.condition {
-  padding: 19px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: linear-gradient(145deg,rgba(255,255,255,.025),transparent);
-  min-height: 150px;
-}
-
-.condition .number {
-  font-size: 11px;
-  color: var(--cyan);
-  letter-spacing: .1em;
-  font-weight: 800;
-}
-
-.condition h3 { font-size: 14px; margin: 14px 0 7px; }
+.conditions { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.condition { padding: 18px; border: 1px solid var(--line); border-radius: 13px; background: #ffffff04; }
+.condition .number { color: var(--gold); font-size: 11px; font-weight: 800; }
+.condition h3 { font-size: 14px; margin: 13px 0 7px; }
 .condition p { color: var(--muted); font-size: 12px; margin: 0; }
 
-.recovery {
-  display: grid;
-  grid-template-columns: repeat(3,1fr);
-  gap: 12px;
-}
-
-.recovery-card {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 20px;
-  background: var(--panel);
-}
-
-.recovery-card .icon {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  background: rgba(214,168,95,.12);
-  color: var(--cyan);
-  font-size: 17px;
-}
-
-.recovery-card h3 { font-size: 14px; margin: 16px 0 7px; }
-.recovery-card p { color: var(--muted); font-size: 12px; margin: 0; }
-
-.example {
-  display: grid;
-  grid-template-columns: .8fr 1.2fr;
-  gap: 24px;
-  align-items: start;
-}
-
-.example-copy p { color: var(--muted); font-size: 14px; }
-
-.example-list {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.example-row {
-  display: grid;
-  grid-template-columns: 36px 1fr;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid var(--line);
-}
-
+.example { display: grid; grid-template-columns: .9fr 1.1fr; gap: 25px; align-items: start; }
+.example-copy p { color: var(--muted); font-size: 13px; }
+.example-list { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.example-row { display: grid; grid-template-columns: 35px 1fr; gap: 12px; padding: 15px; border-bottom: 1px solid var(--line); }
 .example-row:last-child { border-bottom: 0; }
-
-.example-num {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  background: rgba(214,168,95,.1);
-  color: var(--cyan);
-  font-size: 12px;
-  font-weight: 800;
-}
-
+.example-num { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 8px; background: #d6a85f18; color: var(--gold); font-weight: 800; font-size: 12px; }
 .example-row strong { display: block; font-size: 13px; }
 .example-row span { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
+.footer { padding: 28px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; display: flex; justify-content: space-between; gap: 20px; }
+.footer strong { color: var(--text); }
+.reveal { opacity: 0; transform: translateY(15px); transition: .6s; }
+.reveal.in-view { opacity: 1; transform: translateY(0); }
 
-.footer {
-  border-top: 1px solid var(--line);
-  padding: 28px 0 34px;
-  color: var(--muted);
-  font-size: 11px;
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.footer strong { color: var(--ink); }
-
-.reveal {
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity .65s ease,transform .65s ease;
-}
-
-.reveal.in-view {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,*::before,*::after {
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: .01ms !important;
-  }
-  .reveal { opacity: 1; transform: none; }
-}
-
-@media (max-width:800px) {
-  .hero { grid-template-columns: 1fr; padding: 54px 0 44px; gap: 28px; }
-  .hero-visual { min-height: 320px; }
+@media(max-width:800px) {
+  .hero { grid-template-columns: 1fr; padding: 50px 0; }
   .section-head { display: block; }
-  .section-head p { margin-top: 13px; }
-  .sim-body { grid-template-columns: 1fr; }
-  .diagram { border-right: 0; border-bottom: 1px solid var(--line); min-height: 340px; }
-  .grid-conditions { grid-template-columns: repeat(2,1fr); }
-  .example { grid-template-columns: 1fr; }
+  .section-head p { margin-top: 12px; }
+  .sim-body,.example { grid-template-columns: 1fr; }
+  .diagram { border-right: 0; border-bottom: 1px solid var(--line); }
+  .conditions { grid-template-columns: repeat(2,1fr); }
 }
-
-@media (max-width:520px) {
-  .wrap { width: min(100% - 28px,1120px); }
-  .nav { gap: 12px; }
+@media(max-width:520px) {
+  .wrap { width: calc(100% - 28px); }
+  .nav { gap: 10px; }
   .nav a:not(.nav-cta) { display: none; }
-  .hero-visual { padding: 17px; }
-  .node { width: 96px; height: 78px; }
-  .node.a,.node.t1 { left: 0; }
-  .node.b,.node.t2 { right: 0; }
-  .diagram { min-height: 355px; padding: 14px; }
-  .account,.tx-card { width: 112px; }
-  .account.a,.tx-card.t1 { left: 3%; }
-  .account.b,.tx-card.t2 { right: 3%; }
-  .center-status { width: 95px; top: 52%; }
-  .grid-conditions { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .condition { padding: 14px; min-height: 160px; }
-  .recovery { grid-template-columns: 1fr; }
-  .sim-controls .spacer { display: none; }
+  .cards { grid-template-columns: 1fr; }
+  .conditions { gap: 8px; }
+  .condition { padding: 13px; }
+  .diagram { min-height: 355px; }
+  .account,.tx { width: 105px; }
+  .account.a,.tx.t1 { left: 3%; }
+  .account.b,.tx.t2 { right: 3%; }
+  .center-status { width: 96px; }
+  .play-state { margin-left: 0; }
   .footer { flex-direction: column; }
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important; }
+  .reveal { opacity: 1; transform: none; }
 }
 </style>
 </head>
 
 <body>
-<div id="app">
-  <header class="wrap topbar">
-    <a class="brand" href="#top" aria-label="Operating Systems Lab home">
-      <span class="brand-mark">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <rect x="4" y="4" width="16" height="6" rx="2" stroke="currentColor" stroke-width="1.7"/>
-          <rect x="4" y="14" width="16" height="6" rx="2" stroke="currentColor" stroke-width="1.7"/>
-          <path d="M8 7h.01M8 17h.01M12 7h5M12 17h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-        </svg>
-      </span>
-      <span>Operating System LCA</span>
-    </a>
+<header class="wrap topbar">
+  <a class="brand" href="#top"><span>▤</span> OS LAB / FIELD NOTES</a>
+  <nav class="nav">
+    <a href="#introduction">Introduction</a>
+    <a href="#simulation">Simulation</a>
+    <a href="#conditions">Conditions</a>
+    <a href="#real-world">Real-world case</a>
+  </nav>
+</header>
 
-    <nav class="nav" aria-label="Main navigation">
-      <a href="#simulation">Simulation</a>
-      <a href="#conditions">Conditions</a>
-      <a href="#recovery">Recovery</a>
-      <a class="nav-cta" href="#simulation">Run the demo ↗</a>
-    </nav>
-  </header>
-
-  <main id="top">
-    <section class="wrap hero">
-      <div>
-        <div class="eyebrow">Operating Systems · LCA presentation</div>
-        <h1>When two transactions <span>get stuck.</span></h1>
-        <p class="hero-copy">
-          A deadlock is easy to define and harder to picture. This short interactive walkthrough uses two bank accounts to show how database transactions can block each other—and how a database gets things moving again.
-        </p>
-        <div class="hero-actions">
-          <a class="btn primary" href="#simulation">Explore the simulation <span aria-hidden="true">→</span></a>
-          <a class="btn" href="#conditions">Review the four conditions</a>
-        </div>
-        <div class="hero-note">
-          <span class="pulse-dot"></span>
-          A small, step-by-step example. No database setup needed.
-        </div>
-      </div>
-
-      <div class="hero-visual" aria-label="Illustration of transactions and account locks">
-        <div class="visual-head">
-          <span>Transaction map / 01</span>
-          <span class="status-pill">Lock monitor active</span>
-        </div>
-        <div class="mini-network">
-          <div class="node a">
-            <svg viewBox="0 0 24 24" fill="none">
-              <rect x="4" y="9" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/>
-              <path d="M8 9V6a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.6"/>
-            </svg>
-            <strong>Account A</strong><small>Resource A</small>
-          </div>
-          <div class="node b">
-            <svg viewBox="0 0 24 24" fill="none">
-              <rect x="4" y="9" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/>
-              <path d="M8 9V6a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.6"/>
-            </svg>
-            <strong>Account B</strong><small>Resource B</small>
-          </div>
-          <div class="flow-line one"></div>
-          <div class="flow-line two"></div>
-          <div class="flow-line three"></div>
-          <div class="flow-line four"></div>
-          <div class="node t1"><strong>Transaction T1</strong><small>Needs Account B</small></div>
-          <div class="node t2"><strong>Transaction T2</strong><small>Needs Account A</small></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="simulation">
-      <div class="wrap">
-        <div class="section-head reveal">
-          <div>
-            <div class="kicker">01 / Watch it happen</div>
-            <h2>Build the deadlock, one step at a time.</h2>
-          </div>
-          <p>Use Next Step to narrate the sequence to your examiner. Auto Play runs the same explanation for you.</p>
-        </div>
-
-        <div class="simulator reveal">
-          <div class="sim-top">
-            <div class="sim-title">Bank database · Locking scenario</div>
-            <div class="step-count" id="stepCount">Step 1 of 5</div>
-          </div>
-
-          <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
-
-          <div class="sim-body">
-            <div class="diagram" id="diagram">
-              <div class="diagram-label">Resources and active transactions</div>
-
-              <div class="account a" id="accountA">
-                <span class="bank-icon">▤</span>
-                <strong>Account A</strong>
-                <small id="lockA">Available</small>
-              </div>
-
-              <div class="account b" id="accountB">
-                <span class="bank-icon">▤</span>
-                <strong>Account B</strong>
-                <small id="lockB">Available</small>
-              </div>
-
-              <svg class="arrow-svg" viewBox="0 0 600 340" preserveAspectRatio="none" aria-hidden="true">
-                <defs>
-                  <marker id="arrowCyan" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                    <path d="M0,0 L0,6 L6,3 z" fill="#f0c778"/>
-                  </marker>
-                  <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                    <path d="M0,0 L0,6 L6,3 z" fill="#ff7f86"/>
-                  </marker>
-                </defs>
-                <path id="pathT1" d="M150 250 C150 210 170 175 205 145" marker-end="url(#arrowCyan)"/>
-                <path id="pathT2" d="M450 250 C450 210 430 175 395 145" marker-end="url(#arrowCyan)"/>
-                <path id="pathWait1" class="danger" d="M220 270 C290 305 310 305 380 270" marker-end="url(#arrowRed)"/>
-                <path id="pathWait2" class="danger" d="M380 255 C310 215 290 215 220 255" marker-end="url(#arrowRed)"/>
-              </svg>
-
-              <div class="center-status" id="centerStatus">
-                <b id="statusTitle">Ready</b>
-                <span id="statusText">Waiting for first lock</span>
-              </div>
-
-              <div class="tx-card t1" id="tx1">
-                <strong>Transaction T1</strong>
-                <small id="tx1state">Ready to begin</small>
-              </div>
-
-              <div class="tx-card t2" id="tx2">
-                <strong>Transaction T2</strong>
-                <small id="tx2state">Ready to begin</small>
-              </div>
-            </div>
-
-            <aside class="explain" aria-live="polite">
-              <span class="step-tag" id="stepTag">Step 1 · Start</span>
-              <h3 id="stepHeading">Two transfers begin.</h3>
-              <p id="stepDescription">
-                Imagine two database transactions running at almost the same time. T1 transfers money using Account A and Account B; T2 works with the same accounts in the opposite order.
-              </p>
-              <div class="code-note" id="talkTrack">
-                <strong>Say it simply:</strong> Both transactions need access to shared data.
-              </div>
-            </aside>
-          </div>
-
-          <div class="sim-controls">
-            <button class="btn" id="prevBtn" type="button">← Previous</button>
-            <button class="btn primary" id="nextBtn" type="button">Next step →</button>
-            <button class="btn" id="autoBtn" type="button">▶ Auto play</button>
-            <button class="btn" id="resetBtn" type="button">↺ Reset</button>
-            <span class="spacer"></span>
-            <span class="playing-state" id="playState">Ready to demonstrate</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="conditions">
-      <div class="wrap">
-        <div class="section-head reveal">
-          <div>
-            <div class="kicker">02 / The theory behind it</div>
-            <h2>Four conditions make a deadlock possible.</h2>
-          </div>
-          <p>In the classic operating-systems model, all four conditions must hold at the same time for a deadlock to occur.</p>
-        </div>
-
-        <div class="grid-conditions reveal">
-          <article class="condition">
-            <div class="number">CONDITION 01</div>
-            <h3>Mutual exclusion</h3>
-            <p>A resource can be held by one transaction at a time when its lock is exclusive.</p>
-          </article>
-          <article class="condition">
-            <div class="number">CONDITION 02</div>
-            <h3>Hold and wait</h3>
-            <p>A transaction keeps a lock it already owns while waiting for another resource.</p>
-          </article>
-          <article class="condition">
-            <div class="number">CONDITION 03</div>
-            <h3>No preemption</h3>
-            <p>A lock is not simply taken away; it is normally released by the transaction or recovery process.</p>
-          </article>
-          <article class="condition">
-            <div class="number">CONDITION 04</div>
-            <h3>Circular wait</h3>
-            <p>T1 waits for T2's resource, while T2 waits for a resource held by T1.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="recovery">
-      <div class="wrap">
-        <div class="section-head reveal">
-          <div>
-            <div class="kicker">03 / Getting things moving</div>
-            <h2>Detect it. Break the cycle. Continue.</h2>
-          </div>
-          <p>Database engines differ in their exact policies, but the general idea is to detect the conflict and make a transaction release its locks.</p>
-        </div>
-
-        <div class="recovery reveal">
-          <article class="recovery-card">
-            <div class="icon">⌕</div>
-            <h3>1. Detect the cycle</h3>
-            <p>A database can use a wait-for graph or another detection method to find transactions waiting in a loop.</p>
-          </article>
-          <article class="recovery-card">
-            <div class="icon">↶</div>
-            <h3>2. Roll back a victim</h3>
-            <p>The system chooses one transaction to abort or roll back, releasing its locks so the cycle is broken.</p>
-          </article>
-          <article class="recovery-card">
-            <div class="icon">✓</div>
-            <h3>3. Resume safely</h3>
-            <p>The other transaction can proceed. The rolled-back work may be retried, depending on the application.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="wrap example">
-        <div class="example-copy reveal">
-          <div class="kicker">04 / Where it matters</div>
-          <h2 style="font-size:clamp(27px,3.5vw,39px);letter-spacing:-.04em;line-height:1.1;margin:10px 0 17px">
-            A real-world problem, not just a textbook diagram.
-          </h2>
-          <p>Databases sit behind banking apps, online shopping, ticket booking and inventory systems. When concurrent operations need the same records in different orders, lock conflicts can slow or interrupt work.</p>
-          <p>This example is deliberately simplified to make the lock cycle visible. Real database systems have additional safeguards and different recovery strategies.</p>
-        </div>
-
-        <div class="example-list reveal">
-          <div class="example-row">
-            <div class="example-num">01</div>
-            <div>
-              <strong>Banking and payments</strong>
-              <span>Two transfers update shared account records at the same time.</span>
-            </div>
-          </div>
-          <div class="example-row">
-            <div class="example-num">02</div>
-            <div>
-              <strong>Online shopping</strong>
-              <span>Orders and inventory updates compete for overlapping rows.</span>
-            </div>
-          </div>
-          <div class="example-row">
-            <div class="example-num">03</div>
-            <div>
-              <strong>Booking systems</strong>
-              <span>Concurrent requests update availability and reservation records.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="wrap footer">
-    <div>
-      <strong>OPERATING SYSTEMS LCA</strong><br>
-      Deadlocks in Database Transaction Processing
+<main id="top">
+<section class="wrap hero">
+  <div>
+    <div class="eyebrow">Operating Systems · LCA presentation</div>
+    <h1>When two transactions <span>get stuck.</span></h1>
+    <p class="hero-copy">A deadlock is easy to define and harder to picture. This interactive walkthrough uses two bank accounts to explain how database transactions block each other and how a database can recover.</p>
+    <div class="actions">
+      <a class="btn primary" href="#simulation">Explore the simulation →</a>
+      <a class="btn" href="#conditions">Review the four conditions</a>
     </div>
-    <div>Interactive classroom demonstration Made by Atharva Mulik</div>
-  </footer>
+    <p class="hero-note">● A step-by-step example. No database setup needed.</p>
+  </div>
+  <div class="visual">
+    <div class="visual-head"><span>Transaction map / 01</span><span class="pill">Lock monitor active</span></div>
+    <div class="network">
+      <div class="node a">▤<strong>Account A</strong><small>Resource A</small></div>
+      <div class="node b">▤<strong>Account B</strong><small>Resource B</small></div>
+      <div class="flow one"></div><div class="flow two"></div>
+      <div class="flow three"></div><div class="flow four"></div>
+      <div class="node t1"><strong>Transaction T1</strong><small>Needs Account B</small></div>
+      <div class="node t2"><strong>Transaction T2</strong><small>Needs Account A</small></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="introduction">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div><div class="kicker">00 / Introduction</div><h2>Who is presenting this topic?</h2></div>
+      <p>A quick introduction to the student, subject and purpose of this LCA presentation.</p>
+    </div>
+    <div class="cards reveal">
+      <article class="card"><div class="icon">👤</div><h3>Presented by</h3><p><strong>Atharva Mulik</strong><br>MIT World Peace University, Pune</p></article>
+      <article class="card"><div class="icon">▤</div><h3>Subject</h3><p><strong>Operating Systems Lab</strong><br>Lab Continuous Assessment (LCA)</p></article>
+      <article class="card"><div class="icon">◎</div><h3>Presentation objective</h3><p>To explain how database transactions wait on each other, form a deadlock, and recover using a banking example.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="simulation">
+<div class="wrap">
+  <div class="section-head reveal">
+    <div><div class="kicker">01 / Watch it happen</div><h2>Build the deadlock, one step at a time.</h2></div>
+    <p>Use Next Step to explain the sequence to your examiner. Auto Play runs the same demonstration.</p>
+  </div>
+
+  <div class="simulator reveal">
+    <div class="sim-top"><strong>Bank database · Locking scenario</strong><span class="step-count" id="stepCount">Step 1 of 5</span></div>
+    <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="sim-body">
+      <div class="diagram">
+        <div class="account a" id="accountA"><span class="bank-icon">▤</span><strong>Account A</strong><small id="lockA">Available</small></div>
+        <div class="account b" id="accountB"><span class="bank-icon">▤</span><strong>Account B</strong><small id="lockB">Available</small></div>
+
+        <svg class="arrows" viewBox="0 0 600 350" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <marker id="arrowGold" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#d6a85f"/></marker>
+            <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#ff7f86"/></marker>
+          </defs>
+          <path id="pathT1" d="M150 270 C150 220 170 175 205 145" marker-end="url(#arrowGold)"/>
+          <path id="pathT2" d="M450 270 C450 220 430 175 395 145" marker-end="url(#arrowGold)"/>
+          <path id="pathWait1" class="danger" d="M220 275 C290 310 310 310 380 275" marker-end="url(#arrowRed)"/>
+          <path id="pathWait2" class="danger" d="M380 255 C310 215 290 215 220 255" marker-end="url(#arrowRed)"/>
+        </svg>
+
+        <div class="center-status" id="centerStatus"><b id="statusTitle">Ready</b><span id="statusText">Waiting for first lock</span></div>
+        <div class="tx t1" id="tx1"><strong>Transaction T1</strong><small id="tx1state">Ready to begin</small></div>
+        <div class="tx t2" id="tx2"><strong>Transaction T2</strong><small id="tx2state">Ready to begin</small></div>
+      </div>
+
+      <aside class="explain" aria-live="polite">
+        <span class="step-tag" id="stepTag">Step 1 · Start</span>
+        <h3 id="stepHeading">Two transfers begin.</h3>
+        <p id="stepDescription">Two database transactions run at almost the same time and both need Account A and Account B.</p>
+        <div class="talk" id="talkTrack"><strong>Say it simply:</strong> Both transactions need access to shared data.</div>
+      </aside>
+    </div>
+    <div class="sim-controls">
+      <button class="btn" id="prevBtn" type="button">← Previous</button>
+      <button class="btn primary" id="nextBtn" type="button">Next step →</button>
+      <button class="btn" id="autoBtn" type="button">▶ Auto play</button>
+      <button class="btn" id="resetBtn" type="button">↺ Reset</button>
+      <span class="play-state" id="playState">Ready to demonstrate</span>
+    </div>
+  </div>
 </div>
+</section>
+
+<section class="section" id="conditions">
+<div class="wrap">
+  <div class="section-head reveal">
+    <div><div class="kicker">02 / The theory behind it</div><h2>Four conditions make a deadlock possible.</h2></div>
+    <p>In the classic operating-systems model, all four conditions must hold at the same time for a deadlock to occur.</p>
+  </div>
+  <div class="conditions reveal">
+    <article class="condition"><div class="number">CONDITION 01</div><h3>Mutual exclusion</h3><p>A resource with an exclusive lock can be held by only one transaction at a time.</p></article>
+    <article class="condition"><div class="number">CONDITION 02</div><h3>Hold and wait</h3><p>A transaction holds one lock while waiting for another resource.</p></article>
+    <article class="condition"><div class="number">CONDITION 03</div><h3>No preemption</h3><p>A lock is not simply taken away while its transaction is using it.</p></article>
+    <article class="condition"><div class="number">CONDITION 04</div><h3>Circular wait</h3><p>T1 waits for a resource held by T2, while T2 waits for a resource held by T1.</p></article>
+  </div>
+</div>
+</section>
+
+<section class="section" id="recovery">
+<div class="wrap">
+  <div class="section-head reveal">
+    <div><div class="kicker">03 / Getting things moving</div><h2>Detect it. Break the cycle. Continue.</h2></div>
+    <p>Database systems use different policies, but a common recovery approach is to detect the conflict and roll back a transaction.</p>
+  </div>
+  <div class="cards reveal">
+    <article class="card"><div class="icon">⌕</div><h3>1. Detect the cycle</h3><p>A wait-for graph or another method can identify transactions waiting in a loop.</p></article>
+    <article class="card"><div class="icon">↶</div><h3>2. Roll back a transaction</h3><p>The database selects a transaction to abort, releasing its locks and breaking the cycle.</p></article>
+    <article class="card"><div class="icon">✓</div><h3>3. Resume safely</h3><p>The remaining transaction proceeds. The rolled-back work may be retried.</p></article>
+  </div>
+</div>
+</section>
+
+<section class="section" id="real-world">
+<div class="wrap example">
+  <div class="example-copy reveal">
+    <div class="kicker">04 / Real-world case study</div>
+    <h2>Two bank transfers compete for the same accounts.</h2>
+    <p><strong>Scenario:</strong> Imagine two customers making transfers at nearly the same time. Transaction T1 needs to update Account A and then Account B. Transaction T2 needs to update Account B and then Account A. The database uses locks to stop both transfers from changing the same account record at once.</p>
+    <p><strong>How deadlock happens:</strong> T1 locks Account A while T2 locks Account B. T1 then waits for B, and T2 waits for A. Each holds a lock the other needs, so neither can continue. This creates a circular wait: T1 → T2 → T1.</p>
+    <p><strong>Why this fits deadlock:</strong> Both transactions hold resources while waiting for each other. Neither can finish and release its lock, so the cycle remains blocked. The database may detect the cycle, roll back one transaction, allow the other to complete, and retry the rolled-back transaction if appropriate.</p>
+    <p><em>This is an illustrative banking scenario, not a claim about a specific bank incident. Actual database products use different locking and recovery policies.</em></p>
+  </div>
+
+  <div class="example-list reveal">
+    <div class="example-row"><div class="example-num">01</div><div><strong>T1 locks Account A</strong><span>The first transfer begins and holds a lock on A.</span></div></div>
+    <div class="example-row"><div class="example-num">02</div><div><strong>T2 locks Account B</strong><span>The second transfer begins and holds a lock on B.</span></div></div>
+    <div class="example-row"><div class="example-num">03</div><div><strong>Both transactions wait</strong><span>T1 requests B and T2 requests A. Each resource is held by the other transaction, so a circular wait forms.</span></div></div>
+    <div class="example-row"><div class="example-num">04</div><div><strong>Database recovers</strong><span>One transaction is rolled back to break the cycle; the other can proceed, and the rolled-back work may be retried.</span></div></div>
+  </div>
+</div>
+</section>
+</main>
+
+<footer class="wrap footer">
+  <div><strong>OPERATING SYSTEMS LAB</strong><br>Deadlocks in Database Transaction Processing</div>
+  <div>Interactive classroom demonstration · Built for an LCA presentation</div>
+</footer>
 
 <script>
 (() => {
   const steps = [
     {
-      tag: 'Step 1 · Start',
-      title: 'Two transfers begin.',
-      desc: 'Imagine two database transactions running at almost the same time. T1 transfers money using Account A and Account B; T2 works with the same accounts in the opposite order.',
-      talk: 'Both transactions need access to shared data.',
-      a: 'Available',
-      b: 'Available',
-      t1: 'Starting',
-      t2: 'Starting',
-      locks: [],
-      paths: [],
-      status: 'Ready',
-      statusText: 'Waiting for first lock',
-      tone: '',
-      progress: 0
+      tag: "Step 1 · Start",
+      title: "Two transfers begin.",
+      desc: "Imagine two database transactions running at almost the same time. T1 transfers money using Account A and Account B; T2 works with the same accounts in the opposite order.",
+      talk: "Both transactions need access to shared data.",
+      a: "Available", b: "Available",
+      t1: "Starting", t2: "Starting",
+      locks: [], paths: [],
+      status: "Ready", statusText: "Waiting for first lock",
+      tone: "", progress: 0
     },
     {
-      tag: 'Step 2 · First locks',
-      title: 'Each transaction holds one lock.',
-      desc: 'T1 locks Account A. Before it reaches Account B, T2 locks Account B. Each transaction now owns a resource the other one will need.',
-      talk: 'T1 owns A. T2 owns B. So far, both can still make progress.',
-      a: 'Locked by T1',
-      b: 'Locked by T2',
-      t1: 'Holds Account A',
-      t2: 'Holds Account B',
-      locks: ['a', 'b'],
-      paths: ['pathT1', 'pathT2'],
-      status: 'Locks held',
-      statusText: 'Two resources in use',
-      tone: '',
-      progress: 25
+      tag: "Step 2 · First locks",
+      title: "Each transaction holds one lock.",
+      desc: "T1 locks Account A. Before it reaches Account B, T2 locks Account B. Each transaction now owns a resource the other one will need.",
+      talk: "T1 owns A. T2 owns B. So far, both can still make progress.",
+      a: "Locked by T1", b: "Locked by T2",
+      t1: "Holds Account A", t2: "Holds Account B",
+      locks: ["a","b"], paths: ["pathT1","pathT2"],
+      status: "Locks held", statusText: "Two resources in use",
+      tone: "", progress: 25
     },
     {
-      tag: 'Step 3 · Waiting',
-      title: 'Both ask for the other account.',
-      desc: 'T1 requests Account B, but T2 holds its lock. T2 requests Account A, but T1 holds that lock. Each transaction must wait for the other to release its resource.',
-      talk: 'Each transaction is waiting for a lock held by the other.',
-      a: 'Locked by T1',
-      b: 'Locked by T2',
-      t1: 'Waiting for B…',
-      t2: 'Waiting for A…',
-      locks: ['a', 'b'],
-      paths: ['pathT1', 'pathT2', 'pathWait1', 'pathWait2'],
-      status: 'Both waiting',
-      statusText: 'Requests cannot proceed',
-      tone: 'deadlocked',
-      progress: 50
+      tag: "Step 3 · Waiting",
+      title: "Both ask for the other account.",
+      desc: "T1 requests Account B, but T2 holds its lock. T2 requests Account A, but T1 holds that lock. Each transaction must wait for the other to release its resource.",
+      talk: "Each transaction is waiting for a lock held by the other.",
+      a: "Locked by T1", b: "Locked by T2",
+      t1: "Waiting for B…", t2: "Waiting for A…",
+      locks: ["a","b"], paths: ["pathT1","pathT2","pathWait1","pathWait2"],
+      status: "Both waiting", statusText: "Requests cannot proceed",
+      tone: "deadlocked", progress: 50
     },
     {
-      tag: 'Step 4 · Deadlock',
-      title: 'A circular wait has formed.',
-      desc: 'T1 cannot continue until T2 releases B. T2 cannot continue until T1 releases A. Neither can reach the point where it would release its lock, so the database has a deadlock.',
-      talk: 'The wait-for cycle is T1 → T2 → T1. Neither transaction can move forward.',
-      a: 'Held by T1',
-      b: 'Held by T2',
-      t1: 'Blocked by T2',
-      t2: 'Blocked by T1',
-      locks: ['a', 'b'],
-      paths: ['pathT1', 'pathT2', 'pathWait1', 'pathWait2'],
-      status: 'DEADLOCK',
-      statusText: 'Circular wait detected',
-      tone: 'deadlocked',
-      progress: 75
+      tag: "Step 4 · Deadlock",
+      title: "A circular wait has formed.",
+      desc: "T1 cannot continue until T2 releases B. T2 cannot continue until T1 releases A. Neither can reach the point where it would release its lock, so the database has a deadlock.",
+      talk: "The wait-for cycle is T1 → T2 → T1. Neither transaction can move forward.",
+      a: "Held by T1", b: "Held by T2",
+      t1: "Blocked by T2", t2: "Blocked by T1",
+      locks: ["a","b"], paths: ["pathT1","pathT2","pathWait1","pathWait2"],
+      status: "DEADLOCK", statusText: "Circular wait detected",
+      tone: "deadlocked", progress: 75
     },
     {
-      tag: 'Step 5 · Recovery',
-      title: 'The database breaks the cycle.',
-      desc: 'For this demonstration, the database rolls back T2 and releases Account B. T1 can acquire B and complete. T2 can then be retried. Actual database policies vary.',
-      talk: 'Rollback releases a lock, breaks the cycle, and lets the remaining transaction proceed.',
-      a: 'Released → T1',
-      b: 'Held by T1',
-      t1: 'Completes ✓',
-      t2: 'Rolled back · retry',
-      locks: ['b'],
-      paths: ['pathT1'],
-      status: 'Recovered',
-      statusText: 'T1 can complete',
-      tone: 'recovered',
-      progress: 100
+      tag: "Step 5 · Recovery",
+      title: "The database breaks the cycle.",
+      desc: "For this demonstration, the database rolls back T2 and releases Account B. T1 can acquire B and complete. T2 can then be retried. Actual database policies vary.",
+      talk: "Rollback releases a lock, breaks the cycle, and lets the remaining transaction proceed.",
+      a: "Released → T1", b: "Held by T1",
+      t1: "Completes ✓", t2: "Rolled back · retry",
+      locks: ["b"], paths: ["pathT1"],
+      status: "Recovered", statusText: "T1 can complete",
+      tone: "recovered", progress: 100
     }
   ];
 
   let current = 0;
   let timer = null;
-
   const $ = id => document.getElementById(id);
-  const pathIds = ['pathT1', 'pathT2', 'pathWait1', 'pathWait2'];
+  const pathIds = ["pathT1","pathT2","pathWait1","pathWait2"];
 
   function render() {
     const s = steps[current];
+    $("stepCount").textContent = `Step ${current + 1} of ${steps.length}`;
+    $("progressFill").style.width = s.progress + "%";
+    $("stepTag").textContent = s.tag;
+    $("stepHeading").textContent = s.title;
+    $("stepDescription").textContent = s.desc;
+    $("talkTrack").innerHTML = "<strong>Say it simply:</strong> " + s.talk;
+    $("lockA").textContent = s.a;
+    $("lockB").textContent = s.b;
+    $("tx1state").textContent = s.t1;
+    $("tx2state").textContent = s.t2;
 
-    $('stepCount').textContent = `Step ${current + 1} of ${steps.length}`;
-    $('progressFill').style.width = s.progress + '%';
-    $('stepTag').textContent = s.tag;
-    $('stepHeading').textContent = s.title;
-    $('stepDescription').textContent = s.desc;
-    $('talkTrack').innerHTML = '<strong>Say it simply:</strong> ' + s.talk;
+    $("accountA").classList.toggle("locked", s.locks.includes("a"));
+    $("accountB").classList.toggle("locked", s.locks.includes("b"));
 
-    $('lockA').textContent = s.a;
-    $('lockB').textContent = s.b;
-    $('tx1state').textContent = s.t1;
-    $('tx2state').textContent = s.t2;
+    $("tx1").classList.toggle("waiting", current === 2 || current === 3);
+    $("tx2").classList.toggle("waiting", current === 2 || current === 3);
+    $("tx1").classList.toggle("done", current === 4);
+    $("tx2").classList.toggle("done", current === 4);
 
-    $('accountA').classList.toggle('locked', s.locks.includes('a'));
-    $('accountB').classList.toggle('locked', s.locks.includes('b'));
+    $("centerStatus").classList.toggle("deadlocked", s.tone === "deadlocked");
+    $("centerStatus").classList.toggle("recovered", s.tone === "recovered");
+    $("statusTitle").textContent = s.status;
+    $("statusText").textContent = s.statusText;
 
-    $('tx1').classList.toggle('waiting', current === 2 || current === 3);
-    $('tx2').classList.toggle('waiting', current === 2 || current === 3);
-
-    $('tx1').classList.toggle('done', current === 4);
-    $('tx2').classList.toggle('done', current === 4);
-
-    $('centerStatus').classList.toggle('deadlocked', s.tone === 'deadlocked');
-    $('centerStatus').classList.toggle('recovered', s.tone === 'recovered');
-
-    $('statusTitle').textContent = s.status;
-    $('statusText').textContent = s.statusText;
-
-    pathIds.forEach(id => {
-      $(id).classList.toggle('visible', s.paths.includes(id));
-    });
-
-    $('prevBtn').disabled = current === 0;
-    $('prevBtn').style.opacity = current === 0 ? '.4' : '1';
-
-    $('nextBtn').textContent =
-      current === steps.length - 1 ? 'Replay from start ↻' : 'Next step →';
-
-    $('playState').textContent = timer
-      ? 'Auto play running…'
-      : (current === 4 ? 'Demonstration complete' : 'Ready to demonstrate');
+    pathIds.forEach(id => $(id).classList.toggle("visible", s.paths.includes(id)));
+    $("prevBtn").disabled = current === 0;
+    $("prevBtn").style.opacity = current === 0 ? ".4" : "1";
+    $("nextBtn").textContent = current === steps.length - 1 ? "Replay from start ↻" : "Next step →";
+    $("playState").textContent = timer ? "Auto play running…" :
+      (current === 4 ? "Demonstration complete" : "Ready to demonstrate");
   }
 
   function stopAuto() {
@@ -1139,60 +468,47 @@ h1 span { color: var(--cyan); }
       clearInterval(timer);
       timer = null;
     }
-
-    $('autoBtn').textContent = '▶ Auto play';
+    $("autoBtn").textContent = "▶ Auto play";
   }
 
   function next() {
-    if (current < steps.length - 1) {
-      current++;
-    } else {
-      current = 0;
-    }
-
+    current = current < steps.length - 1 ? current + 1 : 0;
     render();
   }
 
-  $('nextBtn').addEventListener('click', () => {
+  $("nextBtn").addEventListener("click", () => {
     stopAuto();
     next();
   });
 
-  $('prevBtn').addEventListener('click', () => {
+  $("prevBtn").addEventListener("click", () => {
     stopAuto();
-
-    if (current > 0) {
-      current--;
-    }
-
+    if (current > 0) current--;
     render();
   });
 
-  $('resetBtn').addEventListener('click', () => {
+  $("resetBtn").addEventListener("click", () => {
     stopAuto();
     current = 0;
     render();
   });
 
-  $('autoBtn').addEventListener('click', () => {
+  $("autoBtn").addEventListener("click", () => {
     if (timer) {
       stopAuto();
       render();
       return;
     }
 
-    if (current === steps.length - 1) {
-      current = 0;
-    }
-
+    if (current === steps.length - 1) current = 0;
+    $("autoBtn").textContent = "Ⅱ Pause";
     render();
-    $('autoBtn').textContent = 'Ⅱ Pause';
 
     timer = setInterval(() => {
       if (current < steps.length - 1) {
         current++;
         render();
-        $('autoBtn').textContent = 'Ⅱ Pause';
+        $("autoBtn").textContent = "Ⅱ Pause";
       } else {
         stopAuto();
         render();
@@ -1200,23 +516,20 @@ h1 span { color: var(--cyan); }
     }, 3100);
   });
 
-  const observer = ('IntersectionObserver' in window)
+  const observer = "IntersectionObserver" in window
     ? new IntersectionObserver(entries => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
-            entry.target.classList.add('in-view');
+            entry.target.classList.add("in-view");
             observer.unobserve(entry.target);
           }
         });
-      }, { threshold: 0.12 })
+      }, { threshold: .12 })
     : null;
 
-  document.querySelectorAll('.reveal').forEach(el => {
-    if (observer) {
-      observer.observe(el);
-    } else {
-      el.classList.add('in-view');
-    }
+  document.querySelectorAll(".reveal").forEach(el => {
+    if (observer) observer.observe(el);
+    else el.classList.add("in-view");
   });
 
   render();
